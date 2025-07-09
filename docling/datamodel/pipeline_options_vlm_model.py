@@ -1,8 +1,9 @@
+import os
 from enum import Enum
 from typing import Any, Callable, Dict, List, Literal, Optional, Union
 
 from docling_core.types.doc.page import SegmentedPage
-from pydantic import AnyUrl, BaseModel
+from pydantic import AnyUrl, BaseModel, model_validator
 from typing_extensions import deprecated
 
 from docling.datamodel.accelerator_options import AcceleratorDevice
@@ -65,6 +66,22 @@ class InlineVlmOptions(BaseVlmOptions):
 
     use_kv_cache: bool = True
     max_new_tokens: int = 4096
+
+    @model_validator(mode="before")
+    @classmethod
+    def check_vlm_quantization_env(cls, data: Any) -> Any:
+        """Check for VLM quantization environment variables."""
+        if isinstance(data, dict):
+            # Check if quantization should be enabled via env var
+            vlm_quantize = os.getenv("DOCLING_VLM_QUANTIZE_8BIT")
+            if vlm_quantize is not None and data.get("quantized") is None:
+                # Convert string to bool (accepts: true, 1, yes, on)
+                data["quantized"] = vlm_quantize.lower() in {"true", "1", "yes", "on"}
+                if data["quantized"]:
+                    # Also set load_in_8bit if not explicitly set
+                    if data.get("load_in_8bit") is None:
+                        data["load_in_8bit"] = True
+        return data
 
     @property
     def repo_cache_folder(self) -> str:

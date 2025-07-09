@@ -107,6 +107,7 @@ class HuggingFaceTransformersVlmModel(BasePageModel, HuggingFaceModelDownloadMix
                 artifacts_path,
                 device_map=self.device,
                 torch_dtype=self.vlm_options.torch_dtype,
+                quantization_config=self.param_quantization_config,
                 _attn_implementation=(
                     "flash_attention_2"
                     if self.device.startswith("cuda")
