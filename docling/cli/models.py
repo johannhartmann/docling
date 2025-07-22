@@ -35,6 +35,7 @@ class _AvailableModels(str, Enum):
     SMOLVLM = "smolvlm"
     GRANITEDOCLING = "granitedocling"
     GRANITEDOCLING_MLX = "granitedocling_mlx"
+    QWENVL = "qwenvl"
     SMOLDOCLING = "smoldocling"
     SMOLDOCLING_MLX = "smoldocling_mlx"
     GRANITE_VISION = "granite_vision"
@@ -110,8 +111,12 @@ def download(
         with_code_formula=_AvailableModels.CODE_FORMULA in to_download,
         with_picture_classifier=_AvailableModels.PICTURE_CLASSIFIER in to_download,
         with_smolvlm=_AvailableModels.SMOLVLM in to_download,
+<<<<<<< HEAD
         with_granitedocling=_AvailableModels.GRANITEDOCLING in to_download,
         with_granitedocling_mlx=_AvailableModels.GRANITEDOCLING_MLX in to_download,
+=======
+        with_qwenvl=_AvailableModels.QWENVL in to_download,
+>>>>>>> dbd3420 (add support for qwen for cuda, too)
         with_smoldocling=_AvailableModels.SMOLDOCLING in to_download,
         with_smoldocling_mlx=_AvailableModels.SMOLDOCLING_MLX in to_download,
         with_granite_vision=_AvailableModels.GRANITE_VISION in to_download,
