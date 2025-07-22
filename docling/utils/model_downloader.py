@@ -6,6 +6,7 @@ from docling.datamodel.layout_model_specs import DOCLING_LAYOUT_V2
 from docling.datamodel.pipeline_options import (
     granite_picture_description,
     smolvlm_picture_description,
+    qwenvl_picture_description,
 )
 from docling.datamodel.settings import settings
 from docling.datamodel.vlm_model_specs import (
@@ -33,6 +34,7 @@ def download_models(
     with_code_formula: bool = True,
     with_picture_classifier: bool = True,
     with_smolvlm: bool = False,
+    with_qwenvl: bool = False,
     with_smoldocling: bool = False,
     with_smoldocling_mlx: bool = False,
     with_granite_vision: bool = False,
@@ -81,6 +83,15 @@ def download_models(
         download_hf_model(
             repo_id=smolvlm_picture_description.repo_id,
             local_dir=output_dir / smolvlm_picture_description.repo_cache_folder,
+            force=force,
+            progress=progress,
+        )
+
+    if with_qwenvl:
+        _log.info("Downloading QwenVL model...")
+        download_hf_model(
+            repo_id=qwenvl_picture_description.repo_id,
+            local_dir=output_dir / qwenvl_picture_description.repo_cache_folder,
             force=force,
             progress=progress,
         )

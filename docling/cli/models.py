@@ -32,6 +32,7 @@ class _AvailableModels(str, Enum):
     CODE_FORMULA = "code_formula"
     PICTURE_CLASSIFIER = "picture_classifier"
     SMOLVLM = "smolvlm"
+    QWENVL = "qwenvl"
     SMOLDOCLING = "smoldocling"
     SMOLDOCLING_MLX = "smoldocling_mlx"
     GRANITE_VISION = "granite_vision"
@@ -107,6 +108,7 @@ def download(
         with_code_formula=_AvailableModels.CODE_FORMULA in to_download,
         with_picture_classifier=_AvailableModels.PICTURE_CLASSIFIER in to_download,
         with_smolvlm=_AvailableModels.SMOLVLM in to_download,
+        with_qwenvl=_AvailableModels.QWENVL in to_download,
         with_smoldocling=_AvailableModels.SMOLDOCLING in to_download,
         with_smoldocling_mlx=_AvailableModels.SMOLDOCLING_MLX in to_download,
         with_granite_vision=_AvailableModels.GRANITE_VISION in to_download,

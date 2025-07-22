@@ -215,6 +215,11 @@ smolvlm_picture_description = PictureDescriptionVlmOptions(
     repo_id="HuggingFaceTB/SmolVLM-256M-Instruct"
 )
 
+# QwenVL
+qwenvl_picture_description = PictureDescriptionVlmOptions(
+    repo_id="Qwen/Qwen2.5-VL-3B-Instruct-AWQ"
+)
+
 # GraniteVision
 granite_picture_description = PictureDescriptionVlmOptions(
     repo_id="ibm-granite/granite-vision-3.3-2b",
