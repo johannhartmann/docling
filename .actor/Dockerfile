@@ -19,28 +19,73 @@ RUN echo '{"name":"docling-actor-dependencies","version":"1.0.0","description":"
     # Clean up npm cache to reduce image size
     && npm cache clean --force
 
-# Final stage with docling-serve-cpu
-FROM quay.io/ds4sd/docling-serve-cpu:latest
+# Final stage - build from Python base instead of external image
+FROM python:3.11-slim-bookworm
 
 LABEL maintainer="Vaclav Vancura <@vancura>" \
       description="Apify Actor for document processing using Docling" \
       version="1.1.0"
 
-# Set only essential environment variables
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Basic tools
+    curl \
+    wget \
+    git \
+    procps \
+    jq \
+    # Libraries for OpenCV and graphics
+    libgl1 \
+    libglib2.0-0 \
+    libgomp1 \
+    # Build tools needed for some Python packages
+    build-essential \
+    # Additional libraries for bitsandbytes
+    libblas-dev \
+    liblapack-dev \
+    gfortran \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
+    HF_HOME=/tmp/huggingface \
+    TORCH_HOME=/tmp/torch \
     DOCLING_SERVE_HOST=0.0.0.0 \
-    DOCLING_SERVE_PORT=5001
+    DOCLING_SERVE_PORT=5001 \
+    DOCLING_SERVE_ARTIFACTS_PATH=/models \
+    OMP_NUM_THREADS=4 \
+    EASYOCR_MODULE_PATH=/tmp/easyocr-models
 
-# Switch to root temporarily to set up directories and permissions
+# Create necessary directories
+RUN mkdir -p /models /tmp/huggingface /tmp/torch && \
+    chmod 777 /tmp/huggingface /tmp/torch
+
+# Install PyTorch with CUDA support
+RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cu118
+
+# Install docling with VLM support
+RUN pip install --no-cache-dir docling[vlm]
+
+# Pre-download models (with proper error handling)
+ARG MODELS_LIST="layout_docling_v2"
+RUN echo "Downloading models..." && \
+    HF_HUB_DOWNLOAD_TIMEOUT="90" \
+    HF_HUB_ETAG_TIMEOUT="90" \
+    docling-tools models download -o "${DOCLING_SERVE_ARTIFACTS_PATH}" ${MODELS_LIST} || \
+    echo "Warning: Model download failed, will retry at runtime"
+
+# Create user and set permissions
+RUN useradd -m -u 1001 -s /bin/bash docling && \
+    chown -R 1001:0 ${DOCLING_SERVE_ARTIFACTS_PATH} && \
+    chmod -R g=u ${DOCLING_SERVE_ARTIFACTS_PATH}
+
+# Switch to root temporarily to set up directories
 USER root
 WORKDIR /app
 
-# Install required tools and create directories in a single layer
-RUN dnf install -y \
-    jq \
-    && dnf clean all \
-    && mkdir -p /build-files \
+# Create directories needed by actor
+RUN mkdir -p /build-files \
              /tmp \
              /tmp/actor-input \
              /tmp/actor-output \
@@ -49,29 +94,25 @@ RUN dnf install -y \
              /apify_input \
              /opt/app-root/src/.EasyOCR/user_network \
              /tmp/easyocr-models \
-    && chown 1000:1000 /build-files \
-    && chown -R 1000:1000 /opt/app-root/src/.EasyOCR \
+    && chown 1001:1001 /build-files \
+    && chown -R 1001:1001 /opt/app-root/src/.EasyOCR \
     && chmod 1777 /tmp \
     && chmod 1777 /tmp/easyocr-models \
     && chmod 777 /tmp/actor-input /tmp/actor-output /tmp/actor-storage /tmp/apify_input /apify_input \
     # Fix for uv_os_get_passwd error in Node.js
-    && echo "docling:x:1000:1000:Docling User:/app:/bin/sh" >> /etc/passwd
-
-# Set environment variable to tell EasyOCR to use a writable location for models
-ENV EASYOCR_MODULE_PATH=/tmp/easyocr-models
+    && echo "docling:x:1001:1001:Docling User:/app:/bin/sh" >> /etc/passwd
 
 # Copy only required files
-COPY --chown=1000:1000 .actor/actor.sh .actor/actor.sh
-COPY --chown=1000:1000 .actor/actor.json .actor/actor.json
-COPY --chown=1000:1000 .actor/input_schema.json .actor/input_schema.json
+COPY --chown=1001:1001 .actor/actor.sh .actor/actor.sh
+COPY --chown=1001:1001 .actor/actor.json .actor/actor.json
+COPY --chown=1001:1001 .actor/input_schema.json .actor/input_schema.json
 RUN chmod +x .actor/actor.sh
 
 # Copy the build files from builder
-COPY --from=builder --chown=1000:1000 /build /build-files
-
+COPY --from=builder --chown=1001:1001 /build /build-files
 
 # Switch to non-root user
-USER 1000
+USER 1001
 
 # Set up TMPFS for temporary files
 VOLUME ["/tmp"]
